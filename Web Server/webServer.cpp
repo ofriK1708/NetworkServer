@@ -15,7 +15,7 @@ struct SocketState
 	int sendSubType;	// Sending sub-type
 	char buffer[128];
 	int len;
-};
+}typedef SocketState;
 
 const int TIME_PORT = 27015;
 const int MAX_SOCKETS = 60;
@@ -27,53 +27,28 @@ const int SEND = 4;
 const int SEND_TIME = 1;
 const int SEND_SECONDS = 2;
 
-bool addSocket(SOCKET id, int what);
-void removeSocket(int index);
-void acceptConnection(int index);
-void receiveMessage(int index);
-void sendMessage(int index);
+bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int what);
+void removeSocket(SocketState sockets[],int& socketsCount,int index);
+void acceptConnection(SocketState sockets[],int& socketsCount,int index);
+void receiveMessage(SocketState sockets[],int& socketsCount, int index);
+void sendMessage(SocketState sockets[],int index);
 
-struct SocketState sockets[MAX_SOCKETS] = { 0 };
-int socketsCount = 0;
+
 
 
 void main()
 {
-	// Initialize Winsock (Windows Sockets).
-
-	// Create a WSADATA object called wsaData.
-	// The WSADATA structure contains information about the Windows 
-	// Sockets implementation.
+	SocketState sockets[MAX_SOCKETS] = { 0 };
+	int socketsCount = 0;
+	
 	WSAData wsaData;
-
-	// Call WSAStartup and return its value as an integer and check for errors.
-	// The WSAStartup function initiates the use of WS2_32.DLL by a process.
-	// First parameter is the version number 2.2.
-	// The WSACleanup function destructs the use of WS2_32.DLL by a process.
 	if (NO_ERROR != WSAStartup(MAKEWORD(2, 2), &wsaData))
 	{
 		cout << "Time Server: Error at WSAStartup()\n";
 		return;
 	}
-
-	// Server side:
-	// Create and bind a socket to an internet address.
-	// Listen through the socket for incoming connections.
-
-	// After initialization, a SOCKET object is ready to be instantiated.
-
-	// Create a SOCKET object called listenSocket. 
-	// For this application:	use the Internet address family (AF_INET), 
-	//							streaming sockets (SOCK_STREAM), 
-	//							and the TCP/IP protocol (IPPROTO_TCP).
 	SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-	// Check for errors to ensure that the socket is a valid socket.
-	// Error detection is a key part of successful networking code. 
-	// If the socket call fails, it returns INVALID_SOCKET. 
-	// The if statement in the previous code is used to catch any errors that
-	// may have occurred while creating the socket. WSAGetLastError returns an 
-	// error number associated with the last error that occurred.
 	if (INVALID_SOCKET == listenSocket)
 	{
 		cout << "Time Server: Error at socket(): " << WSAGetLastError() << endl;
@@ -81,32 +56,15 @@ void main()
 		return;
 	}
 
-	// For a server to communicate on a network, it must bind the socket to 
-	// a network address.
-
-	// Need to assemble the required data for connection in sockaddr structure.
-
-	// Create a sockaddr_in object called serverService. 
+	
 	sockaddr_in serverService;
-	// Address family (must be AF_INET - Internet address family).
+	
 	serverService.sin_family = AF_INET;
-	// IP address. The sin_addr is a union (s_addr is a unsigned long 
-	// (4 bytes) data type).
-	// inet_addr (Iternet address) is used to convert a string (char *) 
-	// into unsigned long.
-	// The IP address is INADDR_ANY to accept connections on all interfaces.
+
 	serverService.sin_addr.s_addr = INADDR_ANY;
-	// IP Port. The htons (host to network - short) function converts an
-	// unsigned short from host to TCP/IP network byte order 
-	// (which is big-endian).
+
 	serverService.sin_port = htons(TIME_PORT);
 
-	// Bind the socket for client's requests.
-
-	// The bind function establishes a connection to a specified socket.
-	// The function uses the socket handler, the sockaddr structure (which
-	// defines properties of the desired connection) and the length of the
-	// sockaddr structure (in bytes).
 	if (SOCKET_ERROR == bind(listenSocket, (SOCKADDR*)&serverService, sizeof(serverService)))
 	{
 		cout << "Time Server: Error at bind(): " << WSAGetLastError() << endl;
@@ -115,9 +73,6 @@ void main()
 		return;
 	}
 
-	// Listen on the Socket for incoming connections.
-	// This socket accepts only one connection (no pending connections 
-	// from other clients). This sets the backlog parameter.
 	if (SOCKET_ERROR == listen(listenSocket, 5))
 	{
 		cout << "Time Server: Error at listen(): " << WSAGetLastError() << endl;
@@ -125,9 +80,8 @@ void main()
 		WSACleanup();
 		return;
 	}
-	addSocket(listenSocket, LISTEN);
+	addSocket(sockets,socketsCount,listenSocket, LISTEN);
 
-	// Accept connections and handles them one by one.
 	while (true)
 	{
 		// The select function determines the status of one or more sockets,
@@ -174,11 +128,11 @@ void main()
 				switch (sockets[i].recv)
 				{
 				case LISTEN:
-					acceptConnection(i);
+					acceptConnection(sockets,socketsCount,i);
 					break;
 
 				case RECEIVE:
-					receiveMessage(i);
+					receiveMessage(sockets,socketsCount,i);
 					break;
 				}
 			}
@@ -189,47 +143,54 @@ void main()
 			if (FD_ISSET(sockets[i].id, &waitSend))
 			{
 				nfd--;
-				switch (sockets[i].send)
+				if (sockets[i].send == SEND)
 				{
-				case SEND:
-					sendMessage(i);
-					break;
+					sendMessage(sockets,i);
 				}
 			}
 		}
 	}
-
+	/* we will never reach here !!!
 	// Closing connections and Winsock.
 	cout << "Time Server: Closing Connection.\n";
 	closesocket(listenSocket);
 	WSACleanup();
+	*/
 }
 
-bool addSocket(SOCKET id, int what)
+bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int state)
 {
 	for (int i = 0; i < MAX_SOCKETS; i++)
 	{
 		if (sockets[i].recv == EMPTY)
 		{
 			sockets[i].id = id;
-			sockets[i].recv = what;
+			sockets[i].recv = state;
 			sockets[i].send = IDLE;
 			sockets[i].len = 0;
 			socketsCount++;
+			//
+			// Set the socket to be in non-blocking mode.
+			//
+			unsigned long flag = 1;
+			if (ioctlsocket(id, FIONBIO, &flag) != 0)
+			{
+				cout << "Time Server: Error at ioctlsocket(): " << WSAGetLastError() << endl;
+			}
 			return (true);
 		}
 	}
 	return (false);
 }
 
-void removeSocket(int index)
+void removeSocket(SocketState sockets[],int& socketsCount,int index)
 {
 	sockets[index].recv = EMPTY;
 	sockets[index].send = EMPTY;
 	socketsCount--;
 }
 
-void acceptConnection(int index)
+void acceptConnection(SocketState sockets[],int& socketsCount,int index)
 {
 	SOCKET id = sockets[index].id;
 	struct sockaddr_in from;		// Address of sending partner
@@ -243,16 +204,7 @@ void acceptConnection(int index)
 	}
 	cout << "Time Server: Client " << inet_ntoa(from.sin_addr) << ":" << ntohs(from.sin_port) << " is connected." << endl;
 
-	//
-	// Set the socket to be in non-blocking mode.
-	//
-	unsigned long flag = 1;
-	if (ioctlsocket(msgSocket, FIONBIO, &flag) != 0)
-	{
-		cout << "Time Server: Error at ioctlsocket(): " << WSAGetLastError() << endl;
-	}
-
-	if (addSocket(msgSocket, RECEIVE) == false)
+	if (addSocket(sockets,socketsCount,msgSocket, RECEIVE) == false)
 	{
 		cout << "\t\tToo many connections, dropped!\n";
 		closesocket(id);
@@ -260,7 +212,7 @@ void acceptConnection(int index)
 	return;
 }
 
-void receiveMessage(int index)
+void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 {
 	SOCKET msgSocket = sockets[index].id;
 
@@ -271,13 +223,13 @@ void receiveMessage(int index)
 	{
 		cout << "Time Server: Error at recv(): " << WSAGetLastError() << endl;
 		closesocket(msgSocket);
-		removeSocket(index);
+		removeSocket(sockets,socketsCount,index);
 		return;
 	}
 	if (bytesRecv == 0)
 	{
 		closesocket(msgSocket);
-		removeSocket(index);
+		removeSocket(sockets,socketsCount,index);
 		return;
 	}
 	else
@@ -287,9 +239,10 @@ void receiveMessage(int index)
 
 		sockets[index].len += bytesRecv;
 
+		// checks what the client wants
 		if (sockets[index].len > 0)
 		{
-			if (strncmp(sockets[index].buffer, "TimeString", 10) == 0)
+			if (strncmp(sockets[index].buffer, "TimeString", 10) == 0) // TODO - update this 
 			{
 				sockets[index].send = SEND;
 				sockets[index].sendSubType = SEND_TIME;
@@ -308,7 +261,7 @@ void receiveMessage(int index)
 			else if (strncmp(sockets[index].buffer, "Exit", 4) == 0)
 			{
 				closesocket(msgSocket);
-				removeSocket(index);
+				removeSocket(sockets,socketsCount,index);
 				return;
 			}
 		}
@@ -316,12 +269,33 @@ void receiveMessage(int index)
 
 }
 
-void sendMessage(int index)
+void sendMessage(SocketState sockets[], int index)
 {
 	int bytesSent = 0;
 	char sendBuff[255];
 
 	SOCKET msgSocket = sockets[index].id;
+	if (sockets[index].sendSubType == SEND_TIME)
+	{
+		// Answer client's request by the current time string.
+
+		// Get the current time.
+		time_t timer;
+		time(&timer);
+		// Parse the current time to printable string.
+		strcpy(sendBuff, ctime(&timer));
+		sendBuff[strlen(sendBuff) - 1] = 0; //to remove the new-line from the created string
+	}
+	else if (sockets[index].sendSubType == SEND_SECONDS)
+	{
+		// Answer client's request by the current time in seconds.
+
+		// Get the current time.
+		time_t timer;
+		time(&timer);
+		// Convert the number to string.
+		_itoa((int)timer, sendBuff, 10);
+	}
 	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
