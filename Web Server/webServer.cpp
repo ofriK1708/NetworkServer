@@ -12,7 +12,7 @@ struct SocketState
 	SOCKET id;			// Socket handle
 	int	recv;			// Receiving?
 	int	send;			// Sending?
-	int sendSubType;	// Sending sub-type
+	int method;	// Sending sub-type
 	char buffer[128];
 	int len;
 }typedef SocketState;
@@ -24,14 +24,17 @@ const int LISTEN = 1;
 const int RECEIVE = 2;
 const int IDLE = 3;
 const int SEND = 4;
-const int SEND_TIME = 1;
+const int GET = 1;
 const int SEND_SECONDS = 2;
+const int BUFFER_SIZE = 1024;
 
 bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int what);
 void removeSocket(SocketState sockets[],int& socketsCount,int index);
 void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
+void buildResponse(const char* status, const char* content_type, const char* body, char* response);
+void GET_request(int client_socket, const char* path, char* data);
 
 
 
@@ -242,10 +245,10 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 		// checks what the client wants
 		if (sockets[index].len > 0)
 		{
-			if (strncmp(sockets[index].buffer, "TimeString", 10) == 0) // TODO - update this 
+			if (strncmp(sockets[index].buffer, "GET", 3) == 0) 
 			{
 				sockets[index].send = SEND;
-				sockets[index].sendSubType = SEND_TIME;
+				sockets[index].method = GET;
 				memcpy(sockets[index].buffer, &sockets[index].buffer[10], sockets[index].len - 10);
 				sockets[index].len -= 10;
 				return;
@@ -253,7 +256,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 			else if (strncmp(sockets[index].buffer, "SecondsSince1970", 16) == 0)
 			{
 				sockets[index].send = SEND;
-				sockets[index].sendSubType = SEND_SECONDS;
+				sockets[index].method = SEND_SECONDS;
 				memcpy(sockets[index].buffer, &sockets[index].buffer[16], sockets[index].len - 16);
 				sockets[index].len -= 16;
 				return;
@@ -268,33 +271,67 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 	}
 
 }
+void GET_request(const char* path,char * response)
+{
+	char full_path[BUFFER_SIZE] = "./HTML_FILES"; // Base directory for your files
+	strcat(full_path, path); // Construct the full file path
+
+	FILE* file = fopen(full_path, "r");
+	if (file == NULL) 
+	{
+		buildResponse("404 Not Found", "text/plain", NULL,response);
+		return;
+	}
+
+	// Read the file content
+	fseek(file, 0, SEEK_END);
+	long int file_size = ftell(file);
+	char* fileContent = (char*)malloc(sizeof(char) * file_size);
+	if (fileContent == NULL)
+	{
+		perror("Failed to allocate memory for file content");
+		response = NULL;
+		return;
+	}
+	fread(fileContent, sizeof(char), BUFFER_SIZE, file);
+	fclose(file);
+
+	// Send the response with the file content
+	buildResponse("200 OK", "text/html", fileContent,response);
+}
+
+void buildResponse(const char* status, const char* content_type, const char* body,char * response) {
+	size_t response_size = strlen(status) + strlen(content_type) + strlen(body) + 100; // +100 for the headers titles 
+	response = (char*)malloc(response_size); // Dynamically allocate memory for the response
+
+	if (response == NULL) 
+	{
+		perror("Failed to allocate memory for response");
+		return;
+	}
+
+	snprintf(response, response_size,
+		"HTTP/1.1 %s\r\n"
+		"Content-Type: %s\r\n"
+		"Content-Length: %zu\r\n"
+		"\r\n"
+		"%s", status, content_type, strlen(body), body);
+}
+
 
 void sendMessage(SocketState sockets[], int index)
 {
 	int bytesSent = 0;
-	char sendBuff[255];
+	char * sendBuff;
 
 	SOCKET msgSocket = sockets[index].id;
-	if (sockets[index].sendSubType == SEND_TIME)
+	if (sockets[index].method == GET)
 	{
-		// Answer client's request by the current time string.
-
-		// Get the current time.
-		time_t timer;
-		time(&timer);
-		// Parse the current time to printable string.
-		strcpy(sendBuff, ctime(&timer));
-		sendBuff[strlen(sendBuff) - 1] = 0; //to remove the new-line from the created string
+		GET_request(sockets[index].buffer, sendBuff);
 	}
-	else if (sockets[index].sendSubType == SEND_SECONDS)
+	else if (sockets[index].method == SEND_SECONDS)
 	{
-		// Answer client's request by the current time in seconds.
-
-		// Get the current time.
-		time_t timer;
-		time(&timer);
-		// Convert the number to string.
-		_itoa((int)timer, sendBuff, 10);
+		
 	}
 	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)

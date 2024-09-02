@@ -184,6 +184,9 @@
   <ItemGroup>
     <ClCompile Include="webServer.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="HTML_FILES\index.html" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
