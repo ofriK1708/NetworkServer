@@ -6,7 +6,7 @@ using namespace std;
 #include <winsock2.h>
 #include <string.h>
 #include <time.h>
-
+// test
 struct SocketState
 {
 	SOCKET id;			// Socket handle
