@@ -275,6 +275,27 @@ void sendMessage(SocketState sockets[], int index)
 	char sendBuff[255];
 
 	SOCKET msgSocket = sockets[index].id;
+	if (sockets[index].sendSubType == SEND_TIME)
+	{
+		// Answer client's request by the current time string.
+
+		// Get the current time.
+		time_t timer;
+		time(&timer);
+		// Parse the current time to printable string.
+		strcpy(sendBuff, ctime(&timer));
+		sendBuff[strlen(sendBuff) - 1] = 0; //to remove the new-line from the created string
+	}
+	else if (sockets[index].sendSubType == SEND_SECONDS)
+	{
+		// Answer client's request by the current time in seconds.
+
+		// Get the current time.
+		time_t timer;
+		time(&timer);
+		// Convert the number to string.
+		_itoa((int)timer, sendBuff, 10);
+	}
 	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
