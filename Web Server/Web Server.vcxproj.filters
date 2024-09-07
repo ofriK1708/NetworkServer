@@ -18,8 +18,16 @@
     <ClCompile Include="webServer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="inOutHelper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="HTML_FILES\index.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="inOutHelper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
