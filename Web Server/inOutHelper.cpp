@@ -1,6 +1,7 @@
 #include "inOutHelper.h"
-
-string createResponse(const string& status, const string& content_type, const string& body, bool isOptions)
+#include <fstream>
+using std::ifstream;
+void createResponse(const string& status, const string& content_type,char * sendResponse, const string& body, bool isOptions)
 {
 	time_t timer;
 	time(&timer);
@@ -23,36 +24,33 @@ string createResponse(const string& status, const string& content_type, const st
 	}
 	response += "\r\n";
 	response += body;
-	return response;
+	sendResponse = (char*)response.c_str();
 }
 // TODO - FIX IT 
-/*
-void GET_request(const char* path, char* response)
+
+void GET_request(string& path, char* response)
 {
-	char full_path[BUFFER_SIZE] = "./HTML_FILES"; // Base directory for the files
-	strcat(full_path, path); // Construct the full file path
-
-	FILE* file = fopen(full_path, "r");
-	if (file == NULL)
-	{
-		buildResponse("404 Not Found", "text/plain", NULL, response);
-		return;
-	}
-
+	string full_path = "./HTML_FILES"; // Base directory for the files
+	full_path += path;
+    
+	ifstream file(full_path,std::ios::in);
 	// Read the file content
-	fseek(file, 0, SEEK_END);
-	long int file_size = ftell(file);
-	char* fileContent = (char*)malloc(sizeof(char) * file_size);
-	if (fileContent == NULL)
+	if (!file.is_open())
 	{
-		perror("Failed to allocate memory for file content");
-		response = NULL;
+		createResponse("404 Not Found", "text/html", response);
 		return;
 	}
-	fread(fileContent, sizeof(char), BUFFER_SIZE, file);
-	fclose(file);
-
-	// Send the response with the file content
-	buildResponse("200 OK", "text/html", fileContent, response);
+	if (file.bad())
+	{
+		createResponse("500 Internal Server Error", "text/html", response);
+		return;
+	}
+	file.seekg(0, file.end);
+	long int file_size = file.tellg();
+	file.seekg(0, file.beg);
+	string body;
+	body.resize(file_size);
+	file.read(&body[0], file_size);
+	file.close();
+	createResponse("200 OK", "text/html", response, body);
 }
-*/

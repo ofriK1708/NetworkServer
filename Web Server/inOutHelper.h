@@ -5,4 +5,4 @@
 #include <ctime>
 using std::string;
 
-string createResponse(const string& status, const string& content_type, const string& body = "", bool isOptions = false);
+void createResponse(const string& status, const string& content_type,char * sendResponse, const string& body = "", bool isOptions = false);

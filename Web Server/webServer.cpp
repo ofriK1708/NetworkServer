@@ -22,7 +22,7 @@ struct massage_headers
 	string file_name;
 	string content_len;
 	string body;
-};
+}typedef massage_headers;
 
 struct SocketState
 {
@@ -30,7 +30,9 @@ struct SocketState
 	int	recv;			// Receiving?
 	int	send;			// Sending?
 	int method;	// Sending sub-type
+	massage_headers headers;
 	char * buffer;
+
 	//int len;
 }typedef SocketState;
 
@@ -50,6 +52,7 @@ void removeSocket(SocketState sockets[],int& socketsCount,int index);
 void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
+void parseMassage(char massage[], massage_headers& headers);
 
 
 
@@ -264,6 +267,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 	}
 		sockets[index].buffer[logicalLength] = '\0'; //add the null-terminating to make it a string
 		cout << "Web Server: Recieved: " << bytesRecv << " bytes of \"" << sockets[index].buffer << "\" message.\n";
+		parseMassage(sockets[index].buffer, sockets[index].headers);
 }
 
 void parseMassage(char massage[], massage_headers& headers)
@@ -311,19 +315,11 @@ void parseMassage(char massage[], massage_headers& headers)
 
 void sendMessage(SocketState sockets[], int index)
 {
-	/*
 	int bytesSent = 0;
 	char * sendBuff;
 
 	SOCKET msgSocket = sockets[index].id;
-	if (sockets[index].method == GET)
-	{
-		//GET_request(sockets[index].buffer, sendBuff);
-	}
-	else if (sockets[index].method == SEND_SECONDS)
-	{
-		
-	}
+	
 	//bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
@@ -334,6 +330,33 @@ void sendMessage(SocketState sockets[], int index)
 	cout << "Time Server: Sent: " << bytesSent << "\\" << strlen(sendBuff) << " bytes of \"" << sendBuff << "\" message.\n";
 
 	sockets[index].send = IDLE;
-	*/
+	
+}
+void handleReq(massage_headers& headers,char* response)
+{
+	if (headers.method == "GET")
+	{
+		//GET_request(headers.path.c_str(), response);
+	}
+	else if (headers.method == "POST")
+	{
+		//POST_request(headers.path.c_str(), headers.body.c_str(), response);
+	}
+	else if (headers.method == "PUT")
+	{
+		//PUT_request(headers.path.c_str(), headers.body.c_str(), response);
+	}
+	else if (headers.method == "DELETE")
+	{
+		//DELETE_request(headers.path.c_str(), response);
+	}
+	else if (headers.method == "OPTIONS")
+	{
+		//buildResponse("200 OK", "text/plain", NULL, response, true);
+	}
+	else
+	{
+		//buildResponse("405 Method Not Allowed", "text/plain", NULL, response);
+	}
 }
 
