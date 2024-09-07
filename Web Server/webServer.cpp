@@ -2,7 +2,6 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "inOutHelper.h"
 #include <iostream>
-using namespace std;
 #pragma comment(lib, "Ws2_32.lib")
 #include <winsock2.h>
 #include <string.h>
@@ -11,6 +10,8 @@ using namespace std;
 printf("Memory Allocation Failed!!!");   \
 exit(1);                                \
 }
+using std::string, std::cout, std::endl;
+
 struct massage_headers
 {
 	string method;
@@ -306,10 +307,11 @@ void parseMassage(char massage[], massage_headers& headers)
 	}
 }
 
-
+// TODO - FIX it 
 
 void sendMessage(SocketState sockets[], int index)
 {
+	/*
 	int bytesSent = 0;
 	char * sendBuff;
 
@@ -322,7 +324,7 @@ void sendMessage(SocketState sockets[], int index)
 	{
 		
 	}
-	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
+	//bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
 		cout << "Time Server: Error at send(): " << WSAGetLastError() << endl;
@@ -332,4 +334,6 @@ void sendMessage(SocketState sockets[], int index)
 	cout << "Time Server: Sent: " << bytesSent << "\\" << strlen(sendBuff) << " bytes of \"" << sendBuff << "\" message.\n";
 
 	sockets[index].send = IDLE;
+	*/
 }
+

@@ -1,6 +1,6 @@
 #include "inOutHelper.h"
 
-string createResponse(const string& status, const string& content_type, const string& body = "", bool isOptions = false)
+string createResponse(const string& status, const string& content_type, const string& body, bool isOptions)
 {
 	time_t timer;
 	time(&timer);
