@@ -1,37 +1,56 @@
 #define _CRT_SECURE_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#include "inOutHelper.h"
 #include <iostream>
 using namespace std;
 #pragma comment(lib, "Ws2_32.lib")
 #include <winsock2.h>
 #include <string.h>
 #include <time.h>
+#define CheckAllocation(c) if(c==NULL){ \
+printf("Memory Allocation Failed!!!");   \
+exit(1);                                \
+}
+struct massage_headers
+{
+	string method;
+	string path;
+	string protocol;
+	string host;
+	string accept_language;
+	string file_name;
+	string content_len;
+	string body;
+};
 
 struct SocketState
 {
 	SOCKET id;			// Socket handle
 	int	recv;			// Receiving?
 	int	send;			// Sending?
-	int sendSubType;	// Sending sub-type
-	char buffer[128];
-	int len;
+	int method;	// Sending sub-type
+	char * buffer;
+	//int len;
 }typedef SocketState;
 
-const int TIME_PORT = 27015;
-const int MAX_SOCKETS = 60;
-const int EMPTY = 0;
-const int LISTEN = 1;
-const int RECEIVE = 2;
-const int IDLE = 3;
-const int SEND = 4;
-const int SEND_TIME = 1;
-const int SEND_SECONDS = 2;
+constexpr int TIME_PORT = 27015;
+constexpr int MAX_SOCKETS = 60;
+constexpr int EMPTY = 0;
+constexpr int LISTEN = 1;
+constexpr int RECEIVE = 2;
+constexpr int IDLE = 3;
+constexpr int SEND = 4;
+constexpr int GET = 1;
+constexpr int SEND_SECONDS = 2;
+constexpr int BUFFER_SIZE = 1024;
 
 bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int what);
 void removeSocket(SocketState sockets[],int& socketsCount,int index);
 void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
+void buildResponse(const char* status, const char* content_type, const char* body, char* response);
+void GET_request(int client_socket, const char* path, char* data);
 
 
 
@@ -215,86 +234,102 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index)
 void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 {
 	SOCKET msgSocket = sockets[index].id;
-
-	int len = sockets[index].len;
-	int bytesRecv = recv(msgSocket, &sockets[index].buffer[len], sizeof(sockets[index].buffer) - len, 0);
-
-	if (SOCKET_ERROR == bytesRecv)
+	int phyicalLength = BUFFER_SIZE;
+	int logicalLength = 0;
+	sockets[index].buffer = (char*)malloc(phyicalLength * sizeof(char));
+	CheckAllocation(sockets[index].buffer);
+	int bytesRecv = recv(msgSocket, sockets[index].buffer, sizeof(sockets[index].buffer), 0);
+	while(bytesRecv != -1)
 	{
-		cout << "Time Server: Error at recv(): " << WSAGetLastError() << endl;
-		closesocket(msgSocket);
-		removeSocket(sockets,socketsCount,index);
-		return;
-	}
-	if (bytesRecv == 0)
-	{
-		closesocket(msgSocket);
-		removeSocket(sockets,socketsCount,index);
-		return;
-	}
-	else
-	{
-		sockets[index].buffer[len + bytesRecv] = '\0'; //add the null-terminating to make it a string
-		cout << "Time Server: Recieved: " << bytesRecv << " bytes of \"" << &sockets[index].buffer[len] << "\" message.\n";
-
-		sockets[index].len += bytesRecv;
-
-		// checks what the client wants
-		if (sockets[index].len > 0)
+		if (SOCKET_ERROR == bytesRecv)
 		{
-			if (strncmp(sockets[index].buffer, "TimeString", 10) == 0) // TODO - update this 
-			{
-				sockets[index].send = SEND;
-				sockets[index].sendSubType = SEND_TIME;
-				memcpy(sockets[index].buffer, &sockets[index].buffer[10], sockets[index].len - 10);
-				sockets[index].len -= 10;
-				return;
-			}
-			else if (strncmp(sockets[index].buffer, "SecondsSince1970", 16) == 0)
-			{
-				sockets[index].send = SEND;
-				sockets[index].sendSubType = SEND_SECONDS;
-				memcpy(sockets[index].buffer, &sockets[index].buffer[16], sockets[index].len - 16);
-				sockets[index].len -= 16;
-				return;
-			}
-			else if (strncmp(sockets[index].buffer, "Exit", 4) == 0)
-			{
-				closesocket(msgSocket);
-				removeSocket(sockets,socketsCount,index);
-				return;
-			}
+			cout << "Time Server: Error at recv(): " << WSAGetLastError() << endl;
+			closesocket(msgSocket);
+			removeSocket(sockets, socketsCount, index);
+			return;
 		}
+		if (bytesRecv == 0)
+		{
+			closesocket(msgSocket);
+			removeSocket(sockets, socketsCount, index);
+			return;
+		}
+		logicalLength += bytesRecv;
+		if (logicalLength == phyicalLength)
+		{
+			phyicalLength *= 2;
+			sockets[index].buffer = (char*)realloc(sockets[index].buffer, phyicalLength * sizeof(char));
+			CheckAllocation(sockets[index].buffer);
+		}
+		bytesRecv = recv(msgSocket, &sockets[index].buffer[logicalLength], sizeof(sockets[index].buffer) - logicalLength, 0);
 	}
-
+		sockets[index].buffer[logicalLength] = '\0'; //add the null-terminating to make it a string
+		cout << "Web Server: Recieved: " << bytesRecv << " bytes of \"" << sockets[index].buffer << "\" message.\n";
 }
+
+void parseMassage(char massage[], massage_headers& headers)
+{
+	char* token = strtok(massage, "\r\n");
+	int numLine = 1;
+	while (token != NULL)
+	{
+		switch (numLine)
+		{
+		case 1:
+			headers.method = strtok(token, " ");
+			if(strstr(token,"Path"))
+			headers.path = strtok(NULL, " ");
+			headers.protocol = strtok(NULL, " ");
+			break;
+		if ()
+		{
+			headers.method = "GET";
+			
+		}
+		else if (strstr(token, "Host:") != NULL)
+		{
+			headers.host = strtok(token, " ");
+			headers.host = strtok(NULL, " ");
+		}
+		else if (strstr(token, "Accept-Language:") != NULL)
+		{
+			headers.accept_language = strtok(token, " ");
+			headers.accept_language = strtok(NULL, " ");
+		}
+		else if (strstr(token, "Content-Length:") != NULL)
+		{
+			headers.content_len = strtok(token, " ");
+			headers.content_len = strtok(NULL, " ");
+		}
+		else if (strstr(token, "Content-Type:") != NULL)
+		{
+			headers.content_len = strtok(token, " ");
+			headers.content_len = strtok(NULL, " ");
+		}
+		else if (strstr(token, "Body:") != NULL)
+		{
+			headers.body = strtok(token, " ");
+			headers.body = strtok(NULL, " ");
+		}
+		token = strtok(NULL, "\r\n");
+	}
+}
+
+
 
 void sendMessage(SocketState sockets[], int index)
 {
 	int bytesSent = 0;
-	char sendBuff[255];
+	char * sendBuff;
 
 	SOCKET msgSocket = sockets[index].id;
-	if (sockets[index].sendSubType == SEND_TIME)
+	if (sockets[index].method == GET)
 	{
-		// Answer client's request by the current time string.
-
-		// Get the current time.
-		time_t timer;
-		time(&timer);
-		// Parse the current time to printable string.
-		strcpy(sendBuff, ctime(&timer));
-		sendBuff[strlen(sendBuff) - 1] = 0; //to remove the new-line from the created string
+		GET_request(sockets[index].buffer, sendBuff);
 	}
-	else if (sockets[index].sendSubType == SEND_SECONDS)
+	else if (sockets[index].method == SEND_SECONDS)
 	{
-		// Answer client's request by the current time in seconds.
-
-		// Get the current time.
-		time_t timer;
-		time(&timer);
-		// Convert the number to string.
-		_itoa((int)timer, sendBuff, 10);
+		
 	}
 	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
