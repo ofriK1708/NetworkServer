@@ -49,8 +49,6 @@ void removeSocket(SocketState sockets[],int& socketsCount,int index);
 void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
-void buildResponse(const char* status, const char* content_type, const char* body, char* response);
-void GET_request(int client_socket, const char* path, char* data);
 
 
 
@@ -186,7 +184,7 @@ bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int state)
 			sockets[i].id = id;
 			sockets[i].recv = state;
 			sockets[i].send = IDLE;
-			sockets[i].len = 0;
+			//sockets[i].len = 0;
 			socketsCount++;
 			//
 			// Set the socket to be in non-blocking mode.
@@ -270,48 +268,41 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 void parseMassage(char massage[], massage_headers& headers)
 {
 	char* token = strtok(massage, "\r\n");
-	int numLine = 1;
+	if (token != NULL) 
+	{
+		headers.method = strtok(token, " ");
+		headers.path = strtok(NULL, " ");
+		headers.protocol = strtok(NULL, " ");
+	}
+	token = strtok(NULL, "\r\n");
 	while (token != NULL)
 	{
-		switch (numLine)
+		if (strstr(token, "Host:") != NULL)
 		{
-		case 1:
-			headers.method = strtok(token, " ");
-			if(strstr(token,"Path"))
-			headers.path = strtok(NULL, " ");
-			headers.protocol = strtok(NULL, " ");
-			break;
-		if ()
-		{
-			headers.method = "GET";
-			
-		}
-		else if (strstr(token, "Host:") != NULL)
-		{
-			headers.host = strtok(token, " ");
+			strtok(token, " ");
 			headers.host = strtok(NULL, " ");
 		}
 		else if (strstr(token, "Accept-Language:") != NULL)
 		{
-			headers.accept_language = strtok(token, " ");
+			strtok(token, " ");
 			headers.accept_language = strtok(NULL, " ");
 		}
 		else if (strstr(token, "Content-Length:") != NULL)
 		{
-			headers.content_len = strtok(token, " ");
+			strtok(token, " ");
 			headers.content_len = strtok(NULL, " ");
 		}
 		else if (strstr(token, "Content-Type:") != NULL)
 		{
-			headers.content_len = strtok(token, " ");
+			strtok(token, " ");
 			headers.content_len = strtok(NULL, " ");
 		}
-		else if (strstr(token, "Body:") != NULL)
-		{
-			headers.body = strtok(token, " ");
-			headers.body = strtok(NULL, " ");
-		}
 		token = strtok(NULL, "\r\n");
+	}
+	if(!headers.content_len.empty() && headers.content_len != "0")
+	{
+		token = strstr(massage, "\r\n\r\n") + 4;
+		headers.body = token;
 	}
 }
 
@@ -325,7 +316,7 @@ void sendMessage(SocketState sockets[], int index)
 	SOCKET msgSocket = sockets[index].id;
 	if (sockets[index].method == GET)
 	{
-		GET_request(sockets[index].buffer, sendBuff);
+		//GET_request(sockets[index].buffer, sendBuff);
 	}
 	else if (sockets[index].method == SEND_SECONDS)
 	{

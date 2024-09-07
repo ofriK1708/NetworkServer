@@ -26,6 +26,7 @@ string createResponse(const string& status, const string& content_type, const st
 	return response;
 }
 // TODO - FIX IT 
+/*
 void GET_request(const char* path, char* response)
 {
 	char full_path[BUFFER_SIZE] = "./HTML_FILES"; // Base directory for the files
@@ -54,3 +55,4 @@ void GET_request(const char* path, char* response)
 	// Send the response with the file content
 	buildResponse("200 OK", "text/html", fileContent, response);
 }
+*/
