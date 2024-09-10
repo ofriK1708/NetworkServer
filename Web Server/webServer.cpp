@@ -18,7 +18,8 @@ struct massage_headers
 	string path;
 	string protocol;
 	string host;
-	string accept_language;
+	string language;
+	string accept_languages;
 	string file_name;
 	string content_len;
 	string body;
@@ -53,6 +54,7 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseMassage(char massage[], massage_headers& headers);
+void checkLangQuery(massage_headers& headers);
 
 
 
@@ -277,6 +279,7 @@ void parseMassage(char massage[], massage_headers& headers)
 	{
 		headers.method = strtok(token, " ");
 		headers.path = strtok(NULL, " ");
+		checkLangQuery(headers);
 		headers.protocol = strtok(NULL, " ");
 	}
 	token = strtok(NULL, "\r\n");
@@ -290,7 +293,7 @@ void parseMassage(char massage[], massage_headers& headers)
 		else if (strstr(token, "Accept-Language:") != NULL)
 		{
 			strtok(token, " ");
-			headers.accept_language = strtok(NULL, " ");
+			headers.accept_languages = strtok(NULL, " ");
 		}
 		else if (strstr(token, "Content-Length:") != NULL)
 		{
@@ -360,3 +363,17 @@ void handleReq(massage_headers& headers,char* response)
 	}
 }
 
+void checkLangQuery(massage_headers& headers)
+{
+	for (int i = 0; i < headers.path.size(); i++)
+	{
+		if (headers.path[i] == '?')
+		{
+			headers.file_name = headers.path.substr(0, i);
+			headers.language = headers.path.substr(i + 6);
+			return;
+		}
+	}
+	headers.language = ""; // if no language query
+	
+}
