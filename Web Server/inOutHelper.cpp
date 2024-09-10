@@ -1,17 +1,17 @@
 #include "inOutHelper.h"
 #include <fstream>
 using std::ifstream;
-void createResponse(const string& status, const string& content_type,char * sendResponse, const string& body, bool isOptions)
+void createResponse(const string& status, const string& content_type, char* sendResponse, const string& body, int content_size, bool isHead, bool isOptions)
 {
 	time_t timer;
 	time(&timer);
 	string response = "HTTP/1.1 " + status + "\r\n";
 	response += "Date: " + string(ctime(&timer)) + "\r\n";
-	if (!body.empty())
+	if (!body.empty() || isHead)
 	{
 		response += "Content-Type: " + content_type + "\r\n";
 		response += "Server: WebServer/1.0\r\n";
-		response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+		response += "Content-Length: " + std::to_string(content_size) + "\r\n";
 	}
 	else if (isOptions)
 	{
@@ -26,9 +26,8 @@ void createResponse(const string& status, const string& content_type,char * send
 	response += body;
 	sendResponse = (char*)response.c_str();
 }
-// TODO - FIX IT 
 
-void GET_request(string& path, char* response)
+void GET_HEAD_request(string& path, char* response,bool isHead)
 {
 	string full_path = "./HTML_FILES"; // Base directory for the files
 	full_path += path;
@@ -48,9 +47,16 @@ void GET_request(string& path, char* response)
 	file.seekg(0, file.end);
 	long int file_size = file.tellg();
 	file.seekg(0, file.beg);
-	string body;
-	body.resize(file_size);
-	file.read(&body[0], file_size);
+	if (!isHead) 
+	{
+		string body;
+		body.resize(file_size);
+		file.read(&body[0], file_size);
+		createResponse("200 OK", "text/html", response, body);
+	}
+	else
+	{
+		createResponse("200 OK", "text/html", response, "", file_size, true);
+	}
 	file.close();
-	createResponse("200 OK", "text/html", response, body);
 }
