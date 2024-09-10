@@ -54,7 +54,8 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseMassage(char massage[], massage_headers& headers);
-void checkLangQuery(massage_headers& headers);
+void checkLangQuery(string& path, string& language, string& acceptLangugeHeader);
+void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader);
 
 
 
@@ -279,7 +280,6 @@ void parseMassage(char massage[], massage_headers& headers)
 	{
 		headers.method = strtok(token, " ");
 		headers.path = strtok(NULL, " ");
-		checkLangQuery(headers);
 		headers.protocol = strtok(NULL, " ");
 	}
 	token = strtok(NULL, "\r\n");
@@ -307,6 +307,7 @@ void parseMassage(char massage[], massage_headers& headers)
 		}
 		token = strtok(NULL, "\r\n");
 	}
+	checkLangQuery(headers.path, headers.language, headers.accept_languages);
 	if(!headers.content_len.empty() && headers.content_len != "0")
 	{
 		token = strstr(massage, "\r\n\r\n") + 4;
@@ -363,17 +364,34 @@ void handleReq(massage_headers& headers,char* response)
 	}
 }
 
-void checkLangQuery(massage_headers& headers)
+void checkLangQuery(string& path,string& language,string& acceptLangugeHeader)
 {
-	for (int i = 0; i < headers.path.size(); i++)
+	
+	for (int i = 0; i < path.size(); i++)
 	{
-		if (headers.path[i] == '?')
+		if (path[i] == '?')
 		{
-			headers.file_name = headers.path.substr(0, i);
-			headers.language = headers.path.substr(i + 6);
-			return;
+			path = path.substr(0, i);
+			language = path.substr(i + 6);
+			break;
 		}
 	}
-	headers.language = ""; // if no language query
+	parseHeaderPath(path, language, acceptLangugeHeader);
 	
 }
+void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader)
+{
+	if (language.empty())
+	{
+		// get default language by the accept-language header
+	}
+	for (int i = 0; i < path.size(); i++)
+	{
+		if (path[i] == '.')
+		{
+			path = path.substr(0, i) + "." + language + path.substr(i);
+			break;
+		}
+	}
+}
+	
