@@ -18,7 +18,8 @@ struct massage_headers
 	string path;
 	string protocol;
 	string host;
-	string accept_language;
+	string language;
+	string accept_languages;
 	string file_name;
 	string content_len;
 	string body;
@@ -53,6 +54,8 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseMassage(char massage[], massage_headers& headers);
+void checkLangQuery(string& path, string& language, string& acceptLangugeHeader);
+void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader);
 
 
 
@@ -290,7 +293,7 @@ void parseMassage(char massage[], massage_headers& headers)
 		else if (strstr(token, "Accept-Language:") != NULL)
 		{
 			strtok(token, " ");
-			headers.accept_language = strtok(NULL, " ");
+			headers.accept_languages = strtok(NULL, " ");
 		}
 		else if (strstr(token, "Content-Length:") != NULL)
 		{
@@ -304,6 +307,7 @@ void parseMassage(char massage[], massage_headers& headers)
 		}
 		token = strtok(NULL, "\r\n");
 	}
+	checkLangQuery(headers.path, headers.language, headers.accept_languages);
 	if(!headers.content_len.empty() && headers.content_len != "0")
 	{
 		token = strstr(massage, "\r\n\r\n") + 4;
@@ -359,4 +363,4 @@ void handleReq(massage_headers& headers,char* response)
 		//buildResponse("405 Method Not Allowed", "text/plain", NULL, response);
 	}
 }
-
+	
