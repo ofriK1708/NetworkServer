@@ -344,7 +344,7 @@ void handleReq(massage_headers& headers,char* response)
 	}
 	else if (headers.method == "POST")
 	{
-		//POST_request(headers.path.c_str(), headers.body.c_str(), response);
+		POST_request(response, headers.body.c_str());
 	}
 	else if (headers.method == "PUT")
 	{

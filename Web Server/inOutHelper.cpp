@@ -51,12 +51,12 @@ void GET_HEAD_request(string& path, char* response, int method,string& acceptLan
 	// Read the file content
 	if (!file.is_open())
 	{
-		createResponse("404 Not Found", "text/html", response, GET); // here it doesnt matter if its head or get because file is not found or bad 
+		createResponse(NOT_FOUND, HTTP_TYPE, response);
 		return;
 	}
 	if (file.bad())
 	{
-		createResponse("500 Internal Server Error", "text/html", response,GET);
+		createResponse(SERVER_ERROR, HTTP_TYPE, response);
 		return;
 	}
 	file.seekg(0, file.end);
@@ -138,4 +138,70 @@ bool isLanguageAccepted(const std::string& header, const std::string& lang) {
 	std::transform(lowerHeader.begin(), lowerHeader.end(), lowerHeader.begin(), ::tolower);
 
 	return lowerHeader.find(lang) != std::string::npos;
+}
+// Creating the response that will insert it into 'response' and it will be printed in send massage func
+void POST_request(string& body, char* response) {
+	string status;
+	if (body.empty())
+	{
+		status = EMPTY_BODY;
+	}
+	else {
+		status = GOOD;
+	}
+	createResponse(status, HTTP_TYPE, response, body);
+}
+
+void PUT_request(string& path,string& body, char* response) {
+	string status = putRequestFileManager(path, body);
+	createResponse(status, HTTP_TYPE, response, body);
+}
+
+//need to understand if the file name is only in the path or if it can be in the body of put request or both
+//WE CAN DECIDE THAT FILE NAME WILL BE SENT ONLY IN THE PATH HEADER
+//if file is already existed need to change last-modified header, need to think if we ahould create another response func
+string putRequestFileManager(string& path, string& body) {
+	string fileName;
+	// find last slach in the path
+	auto lastSlash = path.find_last_of('/');
+	// check that there was last slash
+	if (lastSlash != string::npos) {
+		// get the file name after the last slash
+		fileName = path.substr(lastSlash + 1);
+	}
+	else {
+		// no last slash, get the whole path as the file name
+		fileName = path;
+	}
+
+	std::ifstream file(fileName);
+
+	// file does not exist
+	if (!file) {
+		std::ofstream newFile(fileName);
+		// if file was created get the status and insert the data into the file
+		if (newFile.is_open()) {
+			newFile << body;
+			newFile.close();
+			return CREATED;
+		}
+	}
+	
+	// file exists
+	else {
+		file.close();
+		if (body.empty()) {
+			return EMPTY_BODY;
+		}
+		else {
+			// if body is not enpty override the data of the existing file
+			std::ofstream existingFile(fileName);
+			if (existingFile.is_open()) {
+				existingFile << body;
+				existingFile.close();
+				return GOOD;
+			}
+		}
+	}
+	return SERVER_ERROR;
 }
