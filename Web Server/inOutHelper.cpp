@@ -4,13 +4,7 @@
 #include <ctime>
 #include <algorithm>
 
-#define HEAD 0
-#define GET 1
-#define OPTIONS 2
-#define POST 3
-#define PUT 4
-#define DELETE 5
-#define TRACE 6
+
 
 void createResponse(const string& status, const string& content_type, char* sendResponse, int method, int content_size, const string& body)
 {
@@ -51,12 +45,12 @@ void GET_HEAD_request(string& path, char* response, int method,string& acceptLan
 	// Read the file content
 	if (!file.is_open())
 	{
-		createResponse(NOT_FOUND, HTTP_TYPE, response);
+		createResponse(NOT_FOUND, HTTP_TYPE, response,GET);
 		return;
 	}
 	if (file.bad())
 	{
-		createResponse(SERVER_ERROR, HTTP_TYPE, response);
+		createResponse(SERVER_ERROR, HTTP_TYPE, response,GET);
 		return;
 	}
 	file.seekg(0, file.end);
@@ -81,8 +75,8 @@ bool checkLangQuery(string& path,string& acceptLangugeHeader)
 	string language;
 	bool foundAvailableLang = false;
 	// first we check if there is a language query in the path
-	size_t index = path.find('?');
-	if (index != string::npos)
+	size_t i = path.find('?');
+	if (i != string::npos)
 	{
 		path = path.substr(0, i);
 		language = path.substr(i + 6); // 6 is the length of the query string "lang="
@@ -139,7 +133,9 @@ bool isLanguageAccepted(const std::string& header, const std::string& lang) {
 
 	return lowerHeader.find(lang) != std::string::npos;
 }
+
 // Creating the response that will insert it into 'response' and it will be printed in send massage func
+// createResponse(const string& status, const string& content_type, char* sendResponse, int method, int content_size, const string& body)
 void POST_request(string& body, char* response) {
 	string status;
 	if (body.empty())
@@ -149,12 +145,12 @@ void POST_request(string& body, char* response) {
 	else {
 		status = GOOD;
 	}
-	createResponse(status, HTTP_TYPE, response, body);
+	createResponse(status, HTTP_TYPE, response,POST,body.size(),body);
 }
 
 void PUT_request(string& path,string& body, char* response) {
 	string status = putRequestFileManager(path, body);
-	createResponse(status, HTTP_TYPE, response, body);
+	createResponse(status, HTTP_TYPE, response, POST, body.size(), body);
 }
 
 //need to understand if the file name is only in the path or if it can be in the body of put request or both

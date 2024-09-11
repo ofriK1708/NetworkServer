@@ -54,9 +54,6 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseMassage(char massage[], massage_headers& headers);
-void checkLangQuery(string& path, string& language, string& acceptLangugeHeader);
-void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader);
-
 
 
 
@@ -307,7 +304,6 @@ void parseMassage(char massage[], massage_headers& headers)
 		}
 		token = strtok(NULL, "\r\n");
 	}
-	checkLangQuery(headers.path, headers.language, headers.accept_languages);
 	if(!headers.content_len.empty() && headers.content_len != "0")
 	{
 		token = strstr(massage, "\r\n\r\n") + 4;
@@ -344,7 +340,7 @@ void handleReq(massage_headers& headers,char* response)
 	}
 	else if (headers.method == "POST")
 	{
-		POST_request(response, headers.body.c_str());
+		POST_request(headers.body, response); 
 	}
 	else if (headers.method == "PUT")
 	{
