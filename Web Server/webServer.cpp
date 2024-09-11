@@ -51,6 +51,7 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseMassage(char massage[], massage_headers& headers);
+void handleReq(massage_headers& headers, char* response);
 
 
 
@@ -303,26 +304,26 @@ void parseMassage(char massage[], massage_headers& headers)
 	}
 }
 
-// TODO - FIX it 
+
 
 void sendMessage(SocketState sockets[], int index)
 {
 	int bytesSent = 0;
-	char * sendBuff;
+	char * sendBuff = nullptr;
 
 	SOCKET msgSocket = sockets[index].id;
-	
-	//bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
+	handleReq(sockets[index].headers, sendBuff);
+	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
 		cout << "Time Server: Error at send(): " << WSAGetLastError() << endl;
 		return;
 	}
 
-	cout << "Time Server: Sent: " << bytesSent << "\\" << strlen(sendBuff) << " bytes of \"" << sendBuff << "\" message.\n";
+	cout << sendBuff << endl;
 
 	sockets[index].send = IDLE;
-	
+	free(sockets[index].buffer);
 }
 void handleReq(massage_headers& headers,char* response)
 {
@@ -344,7 +345,7 @@ void handleReq(massage_headers& headers,char* response)
 	}
 	else if (headers.method == "DELETE")
 	{
-		//DELETE_request(headers.path.c_str(), response);
+		DELETE_request(headers.path, response);
 	}
 	else if (headers.method == "OPTIONS")
 	{

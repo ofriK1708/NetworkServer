@@ -28,3 +28,4 @@ bool isLanguageAccepted(const std::string& header, const std::string& lang);
 void POST_request(string& body, char* response);
 string putRequestFileManager(string& path, string& body);
 void PUT_request(string& path, string& body, char* response);
+void DELETE_request(string& path, char* response);

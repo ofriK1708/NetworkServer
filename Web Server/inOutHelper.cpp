@@ -21,7 +21,7 @@ void createResponse(const string& status, const string& content_type, char* send
 	else if (method == OPTIONS)
 	{
 		response += "Allow: GET, HEAD, OPTIONS, PUT, DELETE, TRACE\r\n";
-		response += "Server: WebServer/1.0\r\n";
+		response += "Server: WebServer/1.0 127.0.0.0\r\n";
 	}
 	else
 	{
