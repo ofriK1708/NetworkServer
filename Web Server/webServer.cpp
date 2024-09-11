@@ -363,35 +363,4 @@ void handleReq(massage_headers& headers,char* response)
 		//buildResponse("405 Method Not Allowed", "text/plain", NULL, response);
 	}
 }
-
-void checkLangQuery(string& path,string& language,string& acceptLangugeHeader)
-{
-	
-	for (int i = 0; i < path.size(); i++)
-	{
-		if (path[i] == '?')
-		{
-			path = path.substr(0, i);
-			language = path.substr(i + 6);
-			break;
-		}
-	}
-	parseHeaderPath(path, language, acceptLangugeHeader);
-	
-}
-void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader)
-{
-	if (language.empty())
-	{
-		// get default language by the accept-language header
-	}
-	for (int i = 0; i < path.size(); i++)
-	{
-		if (path[i] == '.')
-		{
-			path = path.substr(0, i) + "." + language + path.substr(i);
-			break;
-		}
-	}
-}
 	
