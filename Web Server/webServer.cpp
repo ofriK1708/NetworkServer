@@ -18,9 +18,8 @@ struct massage_headers
 	string path;
 	string protocol;
 	string host;
-	string language;
 	string accept_languages;
-	string file_name;
+	//string file_name;
 	string content_len;
 	string body;
 }typedef massage_headers;
@@ -44,8 +43,6 @@ constexpr int LISTEN = 1;
 constexpr int RECEIVE = 2;
 constexpr int IDLE = 3;
 constexpr int SEND = 4;
-constexpr int GET = 1;
-constexpr int SEND_SECONDS = 2;
 constexpr int BUFFER_SIZE = 1024;
 
 bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int what);
@@ -297,11 +294,6 @@ void parseMassage(char massage[], massage_headers& headers)
 			strtok(token, " ");
 			headers.content_len = strtok(NULL, " ");
 		}
-		else if (strstr(token, "Content-Type:") != NULL)
-		{
-			strtok(token, " ");
-			headers.content_len = strtok(NULL, " ");
-		}
 		token = strtok(NULL, "\r\n");
 	}
 	if(!headers.content_len.empty() && headers.content_len != "0")
@@ -336,7 +328,11 @@ void handleReq(massage_headers& headers,char* response)
 {
 	if (headers.method == "GET")
 	{
-		//GET_request(headers.path.c_str(), response);
+		GET_HEAD_request(headers.path, response, GET, headers.accept_languages);
+	}
+	else if (headers.method == "HEAD")
+	{
+		GET_HEAD_request(headers.path, response, HEAD, headers.accept_languages);
 	}
 	else if (headers.method == "POST")
 	{
@@ -344,7 +340,7 @@ void handleReq(massage_headers& headers,char* response)
 	}
 	else if (headers.method == "PUT")
 	{
-		//PUT_request(headers.path.c_str(), headers.body.c_str(), response);
+		PUT_request(headers.path, headers.body, response);
 	}
 	else if (headers.method == "DELETE")
 	{
@@ -352,11 +348,11 @@ void handleReq(massage_headers& headers,char* response)
 	}
 	else if (headers.method == "OPTIONS")
 	{
-		//buildResponse("200 OK", "text/plain", NULL, response, true);
+		createResponse(GOOD, HTTP_TYPE, response, OPTIONS);
 	}
 	else
 	{
-		//buildResponse("405 Method Not Allowed", "text/plain", NULL, response);
+		createResponse(NOT_ALLWOED, HTTP_TYPE, response, -1);
 	}
 }
 	

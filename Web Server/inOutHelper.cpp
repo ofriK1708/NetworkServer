@@ -6,7 +6,7 @@
 
 
 
-void createResponse(const string& status, const string& content_type, char* sendResponse, int method, int content_size, const string& body)
+void createResponse(const string& status, const string& content_type, char* sendResponse, int method, size_t content_size, const string& body)
 {
 	time_t timer;
 	time(&timer);
@@ -54,7 +54,7 @@ void GET_HEAD_request(string& path, char* response, int method,string& acceptLan
 		return;
 	}
 	file.seekg(0, file.end);
-	long int file_size = file.tellg();
+	size_t file_size = file.tellg();
 	file.seekg(0, file.beg);
 	if (method == GET)
 	{
@@ -109,7 +109,7 @@ bool findAvailableLang(string& language, string& acceptLangugeHeader)
 	if (acceptLangugeHeader.empty())
 	{
 		language = "en";
-		return;
+		return true;
 	}
 	if (isLanguageAccepted(acceptLangugeHeader, "en")) 
 	{
@@ -135,7 +135,6 @@ bool isLanguageAccepted(const std::string& header, const std::string& lang) {
 }
 
 // Creating the response that will insert it into 'response' and it will be printed in send massage func
-// createResponse(const string& status, const string& content_type, char* sendResponse, int method, int content_size, const string& body)
 void POST_request(string& body, char* response) {
 	string status;
 	if (body.empty())
@@ -174,6 +173,7 @@ string putRequestFileManager(string& path, string& body) {
 
 	// file does not exist
 	if (!file) {
+		file.close();
 		std::ofstream newFile(fileName);
 		// if file was created get the status and insert the data into the file
 		if (newFile.is_open()) {
@@ -187,6 +187,7 @@ string putRequestFileManager(string& path, string& body) {
 	else {
 		file.close();
 		if (body.empty()) {
+			// need to check if no content should do nothing or erase the content
 			return EMPTY_BODY;
 		}
 		else {
@@ -200,4 +201,15 @@ string putRequestFileManager(string& path, string& body) {
 		}
 	}
 	return SERVER_ERROR;
+}
+void DELETE_request(string& path, char* response) 
+{
+	if (remove(path.c_str()) == 0) 
+	{
+		createResponse(GOOD, HTTP_TYPE, response, DELETE_);
+	}
+	else 
+	{
+		createResponse(NOT_FOUND, HTTP_TYPE, response, DELETE_);
+	}
 }
