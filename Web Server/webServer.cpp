@@ -238,7 +238,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 	int logicalLength = 0;
 	sockets[index].buffer = (char*)malloc(phyicalLength * sizeof(char));
 	CheckAllocation(sockets[index].buffer);
-	int bytesRecv = recv(msgSocket, sockets[index].buffer, sizeof(sockets[index].buffer), 0);
+	int bytesRecv = recv(msgSocket, sockets[index].buffer, phyicalLength, 0);
 	while(bytesRecv != -1)
 	{
 		if (SOCKET_ERROR == bytesRecv)
@@ -261,7 +261,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 			sockets[index].buffer = (char*)realloc(sockets[index].buffer, phyicalLength * sizeof(char));
 			CheckAllocation(sockets[index].buffer);
 		}
-		bytesRecv = recv(msgSocket, &sockets[index].buffer[logicalLength], sizeof(sockets[index].buffer) - logicalLength, 0);
+		bytesRecv = recv(msgSocket, &sockets[index].buffer[logicalLength], phyicalLength - logicalLength, 0);
 	}
 		sockets[index].buffer[logicalLength] = '\0'; //add the null-terminating to make it a string
 		cout << "Web Server: Recieved: " << bytesRecv << " bytes of \"" << sockets[index].buffer << "\" message.\n";
