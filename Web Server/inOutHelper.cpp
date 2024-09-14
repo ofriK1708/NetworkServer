@@ -37,14 +37,13 @@ void createResponse(const string& status, const string& content_type, char** sen
 
 void GET_HEAD_request(string& path, char** response, int method,string& acceptLangugeHeader)
 {
-	string full_path = "./HTML_FILES"; // Base directory for the files
+	getFilePath(path);
 	if(!checkLangQuery(path, acceptLangugeHeader))
 	{
 		createResponse("406 Not Acceptable", "text/html", response, GET);
 		return;
 	}
-	full_path += path;
-	std::ifstream file(full_path,std::ios::in);
+	std::ifstream file(path,std::ios::in);
 	// Read the file content
 	if (!file.is_open())
 	{
@@ -159,25 +158,13 @@ void PUT_request(string& path,string& body, char** response) {
 //WE CAN DECIDE THAT FILE NAME WILL BE SENT ONLY IN THE PATH HEADER
 //if file is already existed need to change last-modified header, need to think if we ahould create another response func
 string putRequestFileManager(string& path, string& body) {
-	string fileName;
-	// find last slach in the path
-	auto lastSlash = path.find_last_of('/');
-	// check that there was last slash
-	if (lastSlash != string::npos) {
-		// get the file name after the last slash
-		fileName = path.substr(lastSlash + 1);
-	}
-	else {
-		// no last slash, get the whole path as the file name
-		fileName = path;
-	}
-
-	std::ifstream file(fileName);
+	getFilePath(path);
+	std::ifstream file(path);
 
 	// file does not exist
 	if (!file) {
 		file.close();
-		std::ofstream newFile(fileName);
+		std::ofstream newFile(path);
 		// if file was created get the status and insert the data into the file
 		if (newFile.is_open()) {
 			newFile << body;
@@ -195,7 +182,7 @@ string putRequestFileManager(string& path, string& body) {
 		}
 		else {
 			// if body is not enpty override the data of the existing file
-			std::ofstream existingFile(fileName, std::ios::out | std::ios::trunc);
+			std::ofstream existingFile(path, std::ios::out | std::ios::trunc);
 			if (existingFile.is_open()) {
 				existingFile << body;
 				existingFile.close();
@@ -207,6 +194,7 @@ string putRequestFileManager(string& path, string& body) {
 }
 void DELETE_request(string& path, char** response) 
 {
+	getFilePath(path);
 	if (remove(path.c_str()) == 0) 
 	{
 		createResponse(GOOD, HTTP_TYPE, response, DELETE_);
@@ -214,5 +202,12 @@ void DELETE_request(string& path, char** response)
 	else 
 	{
 		createResponse(NOT_FOUND, HTTP_TYPE, response, DELETE_);
+	}
+}
+void getFilePath(string& path) 
+{
+	size_t index = path.find("C:\\temp");
+	if (index == string::npos) {
+		path = full_path + path;
 	}
 }

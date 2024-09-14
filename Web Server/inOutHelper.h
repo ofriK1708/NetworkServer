@@ -22,6 +22,7 @@ constexpr int PUT = 4;
 constexpr int DELETE_ = 5;
 constexpr int TRACE = 6;
 using std::string;
+const string full_path = "C:/temp"; // Base directory for the files
 
 void createResponse(const string& status, const string& content_type, char** sendResponse,int method, size_t content_size = 0, const string& body = "");
 void GET_HEAD_request(string& path, char** response, int method, string& acceptLangugeHeader);
@@ -33,3 +34,4 @@ void POST_request(string& body, char** response);
 string putRequestFileManager(string& path, string& body);
 void PUT_request(string& path, string& body, char** response);
 void DELETE_request(string& path, char** response);
+void getFilePath(string & path);
