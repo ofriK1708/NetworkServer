@@ -6,12 +6,14 @@
 
 
 
-void createResponse(const string& status, const string& content_type, char* sendResponse, int method, size_t content_size, const string& body)
+void createResponse(const string& status, const string& content_type, char** sendResponse, int method, size_t content_size, const string& body)
 {
 	time_t timer;
 	time(&timer);
 	string response = "HTTP/1.1 " + status + "\r\n";
-	response += "Date: " + string(ctime(&timer)) + "\r\n";
+	response += "Date: " + string(ctime(&timer));
+	response[response.size() - 1] = '\r'; // Remove the '\n' from the end of the string
+	response += "\n";
 	if (method == GET || method == HEAD)
 	{
 		response += "Content-Type: " + content_type + "\r\n";
@@ -21,7 +23,7 @@ void createResponse(const string& status, const string& content_type, char* send
 	else if (method == OPTIONS)
 	{
 		response += "Allow: GET, HEAD, OPTIONS, PUT, DELETE, TRACE\r\n";
-		response += "Server: WebServer/1.0\r\n";
+		response += "Server: WebServer/1.0 127.0.0.0\r\n";
 	}
 	else
 	{
@@ -29,10 +31,11 @@ void createResponse(const string& status, const string& content_type, char* send
 	}
 	response += "\r\n";
 	response += body;
-	sendResponse = (char*)response.c_str();
+	*sendResponse = _strdup((char*)response.c_str());
+	
 }
 
-void GET_HEAD_request(string& path, char* response, int method,string& acceptLangugeHeader)
+void GET_HEAD_request(string& path, char** response, int method,string& acceptLangugeHeader)
 {
 	string full_path = "./HTML_FILES"; // Base directory for the files
 	if(!checkLangQuery(path, acceptLangugeHeader))
@@ -65,7 +68,7 @@ void GET_HEAD_request(string& path, char* response, int method,string& acceptLan
 	}
 	else
 	{
-		createResponse("200 OK", "text/html", response, HEAD, file_size);
+		createResponse("200 OK", "text/html", response, HEAD);
 	}
 	file.close();
 }
@@ -78,8 +81,8 @@ bool checkLangQuery(string& path,string& acceptLangugeHeader)
 	size_t i = path.find('?');
 	if (i != string::npos)
 	{
-		path = path.substr(0, i);
 		language = path.substr(i + 6); // 6 is the length of the query string "lang="
+		path = path.substr(0, i);
 		foundAvailableLang = true;
 	}
 	else // we check if the accept-language header is present or find the first available language and return false there isnt one 
@@ -135,7 +138,7 @@ bool isLanguageAccepted(const std::string& header, const std::string& lang) {
 }
 
 // Creating the response that will insert it into 'response' and it will be printed in send massage func
-void POST_request(string& body, char* response) {
+void POST_request(string& body, char** response) {
 	string status;
 	if (body.empty())
 	{
@@ -147,7 +150,7 @@ void POST_request(string& body, char* response) {
 	createResponse(status, HTTP_TYPE, response,POST,body.size(),body);
 }
 
-void PUT_request(string& path,string& body, char* response) {
+void PUT_request(string& path,string& body, char** response) {
 	string status = putRequestFileManager(path, body);
 	createResponse(status, HTTP_TYPE, response, POST, body.size(), body);
 }
@@ -202,7 +205,7 @@ string putRequestFileManager(string& path, string& body) {
 	}
 	return SERVER_ERROR;
 }
-void DELETE_request(string& path, char* response) 
+void DELETE_request(string& path, char** response) 
 {
 	if (remove(path.c_str()) == 0) 
 	{
