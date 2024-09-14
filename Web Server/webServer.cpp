@@ -2,6 +2,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include "inOutHelper.h"
 #include <iostream>
+#include <sstream>
 #pragma comment(lib, "Ws2_32.lib")
 #include <winsock2.h>
 #include <string.h>
@@ -50,7 +51,7 @@ void removeSocket(SocketState sockets[],int& socketsCount,int index);
 void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
-void parseMassage(char massage[], massage_headers& headers);
+void parseHttpMessage(const string& message, massage_headers& headers);
 void handleReq(massage_headers& headers, char* response);
 
 
@@ -265,42 +266,58 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 	}
 		sockets[index].buffer[logicalLength] = '\0'; //add the null-terminating to make it a string
 		cout << "Web Server: Recieved: " << bytesRecv << " bytes of \"" << sockets[index].buffer << "\" message.\n";
-		parseMassage(sockets[index].buffer, sockets[index].headers);
+		parseHttpMessage(sockets[index].buffer, sockets[index].headers);
+		sockets[index].send = SEND;
 }
 
-void parseMassage(char massage[], massage_headers& headers)
+void parseHttpMessage(const string& message, massage_headers& headers) 
 {
-	char* token = strtok(massage, "\r\n");
-	if (token != NULL) 
+	std::istringstream stream(message);
+	string line;
+	bool isFirstLine = true;
+
+	
+	while (std::getline(stream, line)) 
 	{
-		headers.method = strtok(token, " ");
-		headers.path = strtok(NULL, " ");
-		headers.protocol = strtok(NULL, " ");
+		if (line == "\r" || line == "\n" || line == "\r\n") 
+		{
+			// Reached the end of headers, body starts after this
+			break;
+		}
+
+		if (isFirstLine) 
+		{
+			// Parse the request line (Method, Path, Protocol)
+			std::istringstream requestStream(line);
+			requestStream >> headers.method >> headers.path >> headers.protocol;
+			isFirstLine = false;
+		}
+		else
+		{
+			// Check for specific headers
+			if (headers.host.empty() && line.find("Host:") != std::string::npos) 
+			{
+				headers.host = line.substr(strlen("Host: "));  // Extract the value after "Host: (the same for all other headers)"
+			}
+			else if (headers.accept_languages.empty() && line.find("Accept-Language:") != std::string::npos) 
+			{
+				headers.accept_languages = line.substr(strlen("Accept-Language: "));   
+			}
+			else if (headers.content_len.empty() && line.find("Content-Length:") != std::string::npos) 
+			{
+				headers.content_len = line.substr(strlen("Content-Length: "));
+			}
+		}
 	}
-	token = strtok(NULL, "\r\n");
-	while (token != NULL)
+
+	// Extract the body if there is content after the headers
+	if (!headers.content_len.empty()) 
 	{
-		if (strstr(token, "Host:") != NULL)
+		string body;
+		while (std::getline(stream, body)) 
 		{
-			strtok(token, " ");
-			headers.host = strtok(NULL, " ");
+			headers.body += body + "\n";
 		}
-		else if (strstr(token, "Accept-Language:") != NULL)
-		{
-			strtok(token, " ");
-			headers.accept_languages = strtok(NULL, " ");
-		}
-		else if (strstr(token, "Content-Length:") != NULL)
-		{
-			strtok(token, " ");
-			headers.content_len = strtok(NULL, " ");
-		}
-		token = strtok(NULL, "\r\n");
-	}
-	if(!headers.content_len.empty() && headers.content_len != "0")
-	{
-		token = strstr(massage, "\r\n\r\n") + 4;
-		headers.body = token;
 	}
 }
 

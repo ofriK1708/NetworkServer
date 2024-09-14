@@ -102,19 +102,19 @@ void main()
 		cin >> option;
 
 		if (option == 1)
-			strcpy(sendBuff, "GET /index.html?lang=he HTTP/1.1\r\nHost: example.com\r\nAccept - Language : en, he, fr\r\n\r\n");
+			strcpy(sendBuff, "GET /index.html?lang=he HTTP/1.1\r\nHost: example.com\r\nAccept-Language: en, he, fr\r\n\r\n");
 		else if (option == 2)
-			strcpy(sendBuff, "HEAD /index.html?lang=he HTTP/1.1\r\nHost: example.com\r\nAccept - Language : en, he, fr\r\n\r\n");
+			strcpy(sendBuff, "HEAD /index.html?lang=he HTTP/1.1\r\nHost: example.com\r\nAccept-Language: en, he, fr\r\n\r\n");
 		else if (option == 3)
-			strcpy(sendBuff, "POST /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent - Type : text / plain\r\nContent - Length : 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "POST /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 4)
-			strcpy(sendBuff, "PUT /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent - Type : text / plain\r\nContent - Length : 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "PUT /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 5)
-			strcpy(sendBuff, "DELETE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent - Type : text / plain\r\nContent - Length : 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "DELETE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 6)
-			strcpy(sendBuff, "TRACE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent - Type : text / plain\r\nContent - Length : 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "TRACE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 7)
-			strcpy(sendBuff, "OPTIONS /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent - Type : text / plain\r\nContent - Length : 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "OPTIONS /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 8)
 			break;
 		else
