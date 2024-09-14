@@ -83,7 +83,7 @@ bool checkLangQuery(string& path,string& acceptLangugeHeader)
 	{
 		language = path.substr(i + 6); // 6 is the length of the query string "lang="
 		path = path.substr(0, i);
-		foundAvailableLang = true;
+		foundAvailableLang = isLanguageAccepted(acceptLangugeHeader, language);
 	}
 	else // we check if the accept-language header is present or find the first available language and return false there isnt one 
 	{
