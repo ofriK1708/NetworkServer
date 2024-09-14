@@ -83,7 +83,7 @@ void main()
 	int bytesSent = 0;
 	int bytesRecv = 0;
 	char sendBuff[1040];
-	char recvBuff[1040];
+	char recvBuff[2040];
 	int option = 0;
 
 	while (option != 8)
@@ -139,7 +139,7 @@ void main()
 		// Gets the server's answer for options 1 and 2.
 		if (option != 8)
 		{
-			bytesRecv = recv(connSocket, recvBuff, 1040, 0);
+			bytesRecv = recv(connSocket, recvBuff, 2040, 0);
 			if (SOCKET_ERROR == bytesRecv)
 			{
 				cout << "Time Client: Error at recv(): " << WSAGetLastError() << endl;
@@ -152,8 +152,7 @@ void main()
 				cout << "Server closed the connection\n";
 				return;
 			}
-
-			recvBuff[bytesRecv] = '\0'; //add the null-terminating to make it a string
+			recvBuff[bytesRecv-1] = '\0';
 			cout << recvBuff << endl;
 		}
 		else if (option == 8)

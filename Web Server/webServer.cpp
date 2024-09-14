@@ -52,7 +52,7 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index);
 void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseHttpMessage(const string& message, massage_headers& headers);
-void handleReq(massage_headers& headers, char* response);
+void handleReq(massage_headers& headers, char** response);
 
 
 
@@ -101,7 +101,7 @@ void main()
 		return;
 	}
 	addSocket(sockets,socketsCount,listenSocket, LISTEN);
-
+	cout << "Web Server: Wait for clients' requests.\n";
 	while (true)
 	{
 		// The select function determines the status of one or more sockets,
@@ -265,7 +265,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 		bytesRecv = recv(msgSocket, &sockets[index].buffer[logicalLength], phyicalLength - logicalLength, 0);
 	}
 		sockets[index].buffer[logicalLength] = '\0'; //add the null-terminating to make it a string
-		cout << "Web Server: Recieved: " << bytesRecv << " bytes of \"" << sockets[index].buffer << "\" message.\n";
+		cout << "Web Server: Recieved: " << logicalLength << " bytes of \"" << sockets[index].buffer << "\" message.\n";
 		parseHttpMessage(sockets[index].buffer, sockets[index].headers);
 		sockets[index].send = SEND;
 }
@@ -329,11 +329,12 @@ void sendMessage(SocketState sockets[], int index)
 	char * sendBuff = nullptr;
 
 	SOCKET msgSocket = sockets[index].id;
-	handleReq(sockets[index].headers, sendBuff);
+	handleReq(sockets[index].headers, &sendBuff);
+	sendBuff[strlen(sendBuff)] = '\0';
 	bytesSent = send(msgSocket, sendBuff, (int)strlen(sendBuff), 0);
 	if (SOCKET_ERROR == bytesSent)
 	{
-		cout << "Time Server: Error at send(): " << WSAGetLastError() << endl;
+		cout << "Web Server: Error at send(): " << WSAGetLastError() << endl;
 		return;
 	}
 
@@ -342,7 +343,7 @@ void sendMessage(SocketState sockets[], int index)
 	sockets[index].send = IDLE;
 	free(sockets[index].buffer);
 }
-void handleReq(massage_headers& headers,char* response)
+void handleReq(massage_headers& headers,char** response)
 {
 	if (headers.method == "GET")
 	{
