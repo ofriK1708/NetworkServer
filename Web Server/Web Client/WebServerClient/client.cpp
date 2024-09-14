@@ -115,8 +115,15 @@ void main()
 			strcpy(sendBuff, "TRACE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 7)
 			strcpy(sendBuff, "OPTIONS /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
-		else if (option == 8)
-			break;
+		else if (option == 8) 
+		{
+			// Closing connections and Winsock.
+			cout << "Web Client: Closing Connection.\n";
+			closesocket(connSocket);
+			WSACleanup();
+			return;
+		}
+			
 		else
 		{
 			cout << "Invalid option\n";
@@ -154,13 +161,6 @@ void main()
 			}
 			recvBuff[bytesRecv-1] = '\0';
 			cout << recvBuff << endl;
-		}
-		else if (option == 8)
-		{
-			// Closing connections and Winsock.
-			cout << "Time Client: Closing Connection.\n";
-			closesocket(connSocket);
-			WSACleanup();
 		}
 	}
 }
