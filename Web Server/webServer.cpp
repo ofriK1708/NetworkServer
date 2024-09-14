@@ -313,6 +313,7 @@ void parseHttpMessage(const string& message, massage_headers& headers)
 	// Extract the body if there is content after the headers
 	if (!headers.content_len.empty()) 
 	{
+		headers.body.erase();
 		string body;
 		while (std::getline(stream, body)) 
 		{

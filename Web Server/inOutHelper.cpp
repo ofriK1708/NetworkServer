@@ -195,7 +195,7 @@ string putRequestFileManager(string& path, string& body) {
 		}
 		else {
 			// if body is not enpty override the data of the existing file
-			std::ofstream existingFile(fileName);
+			std::ofstream existingFile(fileName, std::ios::out | std::ios::trunc);
 			if (existingFile.is_open()) {
 				existingFile << body;
 				existingFile.close();
