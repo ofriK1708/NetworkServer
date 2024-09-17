@@ -67,7 +67,7 @@ void GET_HEAD_request(string& path, char** response, int method,string& acceptLa
 	}
 	else
 	{
-		createResponse("200 OK", "text/html", response, HEAD);
+		createResponse("200 OK", "text/html", response, HEAD,file_size);
 	}
 	file.close();
 }
@@ -107,7 +107,7 @@ void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader
 }
 bool findAvailableLang(string& language, string& acceptLangugeHeader)
 {
-
+	bool found = true;
 	if (acceptLangugeHeader.empty())
 	{
 		language = "en";
@@ -125,7 +125,12 @@ bool findAvailableLang(string& language, string& acceptLangugeHeader)
 	{
 		language = "fr";  // Then prefer French if present
 	}
-	return language.empty(); // If no language was found, return false
+	else // If none of the above languages are present, return false
+	{
+		found = false;
+	}
+	return found;
+	
 }
 
 bool isLanguageAccepted(const std::string& header, const std::string& lang) {
@@ -207,7 +212,9 @@ void DELETE_request(string& path, char** response)
 void getFilePath(string& path) 
 {
 	size_t index = path.find("C:\\temp");
-	if (index == string::npos) {
-		path = full_path + path;
+	// if the C:temp is not in the path we add it
+	if (index == string::npos) 
+	{
+		path = full_path + "/" + path;
 	}
 }
