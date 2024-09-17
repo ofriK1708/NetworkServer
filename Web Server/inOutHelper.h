@@ -6,10 +6,12 @@
 #define GOOD "200 OK"
 #define EMPTY_BODY "204 No Content"
 #define CREATED "201 Created"
+#define BAD_REQUEST "400 Bad Request"
 #define NOT_FOUND "404 Not Found"
 #define NOT_ALLWOED "405 Not Allowed"
 #define SERVER_ERROR "500 Internal Server Error"
-#define HTTP_TYPE "text/html"
+#define TEXT_HTML_TYPE "text/html"
+#define MESSAGE_HTTP_TYPE "message/http"
 #define CheckAllocation(c) if(c==NULL){ \
 printf("Memory Allocation Failed!!!");   \
 exit(1);                                \
@@ -24,7 +26,7 @@ constexpr int TRACE = 6;
 using std::string;
 const string full_path = "C:/temp"; // Base directory for the files
 
-void createResponse(const string& status, const string& content_type, char** sendResponse,int method, size_t content_size = 0, const string& body = "");
+void createResponse(const string& status, const string& content_type, char** sendResponse,int method = -1, size_t content_size = 0, const string& body = "");
 void GET_HEAD_request(string& path, char** response, int method, string& acceptLangugeHeader);
 bool checkLangQuery(string& path, string& acceptLangugeHeader);
 void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader); 
