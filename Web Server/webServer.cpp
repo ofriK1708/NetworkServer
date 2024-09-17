@@ -20,7 +20,6 @@ struct massage_headers
 	string protocol;
 	string host;
 	string accept_languages;
-	//string file_name;
 	string content_len;
 	string body;
 }typedef massage_headers;
@@ -37,7 +36,7 @@ struct SocketState
 	//int len;
 }typedef SocketState;
 
-constexpr int TIME_PORT = 27015;
+constexpr int Web_PORT = 27015;
 constexpr int MAX_SOCKETS = 60;
 constexpr int EMPTY = 0;
 constexpr int LISTEN = 1;
@@ -53,7 +52,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount, int index);
 void sendMessage(SocketState sockets[],int index);
 void parseHttpMessage(const string& message, massage_headers& headers);
 void handleReq(massage_headers& headers, char** response);
-
+void clearAndFreeHeadersAndResponse(SocketState& socket);
 
 
 void main()
@@ -64,14 +63,14 @@ void main()
 	WSAData wsaData;
 	if (NO_ERROR != WSAStartup(MAKEWORD(2, 2), &wsaData))
 	{
-		cout << "Time Server: Error at WSAStartup()\n";
+		cout << "Web Server: Error at WSAStartup()\n";
 		return;
 	}
 	SOCKET listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (INVALID_SOCKET == listenSocket)
 	{
-		cout << "Time Server: Error at socket(): " << WSAGetLastError() << endl;
+		cout << "Web Server: Error at socket(): " << WSAGetLastError() << endl;
 		WSACleanup();
 		return;
 	}
@@ -83,11 +82,11 @@ void main()
 
 	serverService.sin_addr.s_addr = INADDR_ANY;
 
-	serverService.sin_port = htons(TIME_PORT);
+	serverService.sin_port = htons(Web_PORT);
 
 	if (SOCKET_ERROR == bind(listenSocket, (SOCKADDR*)&serverService, sizeof(serverService)))
 	{
-		cout << "Time Server: Error at bind(): " << WSAGetLastError() << endl;
+		cout << "Web Server: Error at bind(): " << WSAGetLastError() << endl;
 		closesocket(listenSocket);
 		WSACleanup();
 		return;
@@ -95,7 +94,7 @@ void main()
 
 	if (SOCKET_ERROR == listen(listenSocket, 5))
 	{
-		cout << "Time Server: Error at listen(): " << WSAGetLastError() << endl;
+		cout << "Web Server: Error at listen(): " << WSAGetLastError() << endl;
 		closesocket(listenSocket);
 		WSACleanup();
 		return;
@@ -135,7 +134,7 @@ void main()
 		nfd = select(0, &waitRecv, &waitSend, NULL, NULL);
 		if (nfd == SOCKET_ERROR)
 		{
-			cout << "Time Server: Error at select(): " << WSAGetLastError() << endl;
+			cout << "Web Server: Error at select(): " << WSAGetLastError() << endl;
 			WSACleanup();
 			return;
 		}
@@ -172,7 +171,7 @@ void main()
 	}
 	/* we will never reach here !!!
 	// Closing connections and Winsock.
-	cout << "Time Server: Closing Connection.\n";
+	cout << "Web Server: Closing Connection.\n";
 	closesocket(listenSocket);
 	WSACleanup();
 	*/
@@ -195,7 +194,7 @@ bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int state)
 			unsigned long flag = 1;
 			if (ioctlsocket(id, FIONBIO, &flag) != 0)
 			{
-				cout << "Time Server: Error at ioctlsocket(): " << WSAGetLastError() << endl;
+				cout << "Web Server: Error at ioctlsocket(): " << WSAGetLastError() << endl;
 			}
 			return (true);
 		}
@@ -219,10 +218,10 @@ void acceptConnection(SocketState sockets[],int& socketsCount,int index)
 	SOCKET msgSocket = accept(id, (struct sockaddr*)&from, &fromLen);
 	if (INVALID_SOCKET == msgSocket)
 	{
-		cout << "Time Server: Error at accept(): " << WSAGetLastError() << endl;
+		cout << "Web Server: Error at accept(): " << WSAGetLastError() << endl;
 		return;
 	}
-	cout << "Time Server: Client " << inet_ntoa(from.sin_addr) << ":" << ntohs(from.sin_port) << " is connected." << endl;
+	cout << "Web Server: Client " << inet_ntoa(from.sin_addr) << ":" << ntohs(from.sin_port) << " is connected." << endl;
 
 	if (addSocket(sockets,socketsCount,msgSocket, RECEIVE) == false)
 	{
@@ -244,13 +243,14 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 	{
 		if (SOCKET_ERROR == bytesRecv)
 		{
-			cout << "Time Server: Error at recv(): " << WSAGetLastError() << endl;
+			cout << "Web Server: Error at recv(): " << WSAGetLastError() << endl;
 			closesocket(msgSocket);
 			removeSocket(sockets, socketsCount, index);
 			return;
 		}
 		if (bytesRecv == 0)
 		{
+			cout << "Web Server: Client closed connenction.\n";
 			closesocket(msgSocket);
 			removeSocket(sockets, socketsCount, index);
 			return;
@@ -265,7 +265,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 		bytesRecv = recv(msgSocket, &sockets[index].buffer[logicalLength], phyicalLength - logicalLength, 0);
 	}
 		sockets[index].buffer[logicalLength] = '\0'; //add the null-terminating to make it a string
-		cout << "Web Server: Recieved: " << logicalLength << " bytes of \"" << sockets[index].buffer << "\" message.\n";
+		cout << "Web Server: Recieved: " << logicalLength << " bytes of \""<< endl << sockets[index].buffer;
 		parseHttpMessage(sockets[index].buffer, sockets[index].headers);
 		sockets[index].send = SEND;
 }
@@ -320,6 +320,10 @@ void parseHttpMessage(const string& message, massage_headers& headers)
 			headers.body += body + "\n";
 		}
 	}
+	if(headers.method == "TRACE" && headers.content_len.empty())
+	{
+		headers.body = message;
+	}
 }
 
 
@@ -340,9 +344,7 @@ void sendMessage(SocketState sockets[], int index)
 	}
 
 	cout << sendBuff << endl;
-
-	sockets[index].send = IDLE;
-	free(sockets[index].buffer);
+	clearAndFreeHeadersAndResponse(sockets[index]);
 }
 void handleReq(massage_headers& headers,char** response)
 {
@@ -366,13 +368,36 @@ void handleReq(massage_headers& headers,char** response)
 	{
 		DELETE_request(headers.path, response);
 	}
+	else if (headers.method == "TRACE")
+	{
+		if (headers.content_len.empty())
+		{
+			createResponse(GOOD, TEXT_HTML_TYPE, response, TRACE, headers.body.size(), headers.body);
+		}
+		else // if there is a body in the request it is not allowed
+		{
+			createResponse(BAD_REQUEST, TEXT_HTML_TYPE, response);
+		}
+	}
 	else if (headers.method == "OPTIONS")
 	{
-		createResponse(GOOD, HTTP_TYPE, response, OPTIONS);
+		createResponse(GOOD, TEXT_HTML_TYPE, response, OPTIONS);
 	}
 	else
 	{
-		createResponse(NOT_ALLWOED, HTTP_TYPE, response, -1);
+		createResponse(NOT_ALLWOED, TEXT_HTML_TYPE, response);
 	}
 }
-	
+void clearAndFreeHeadersAndResponse(SocketState& socket)
+{
+	socket.headers.method.clear();
+	socket.headers.path.clear();
+	socket.headers.protocol.clear();
+	socket.headers.host.clear();
+	socket.headers.accept_languages.clear();
+	socket.headers.content_len.clear();
+	socket.headers.body.clear();
+	free(socket.buffer);
+	socket.buffer = nullptr;
+	socket.send = IDLE;
+}

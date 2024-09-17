@@ -14,10 +14,10 @@ void createResponse(const string& status, const string& content_type, char** sen
 	response += "Date: " + string(ctime(&timer));
 	response[response.size() - 1] = '\r'; // Remove the '\n' from the end of the string
 	response += "\n";
-	if (method == GET || method == HEAD)
+	if ((method == GET || method == HEAD) && status == GOOD)
 	{
 		response += "Content-Type: " + content_type + "\r\n";
-		response += "Server: WebServer/1.0\r\n";
+		response += "Server: WebServer/1.0 127.0.0.0\r\n";
 		response += "Content-Length: " + std::to_string(content_size) + "\r\n";
 	}
 	else if (method == OPTIONS)
@@ -27,7 +27,7 @@ void createResponse(const string& status, const string& content_type, char** sen
 	}
 	else
 	{
-		response += "Server: WebServer/1.0\r\n";
+		response += "Server: WebServer/1.0 127.0.0.0\r\n";
 	}
 	response += "\r\n";
 	response += body;
@@ -47,12 +47,12 @@ void GET_HEAD_request(string& path, char** response, int method,string& acceptLa
 	// Read the file content
 	if (!file.is_open())
 	{
-		createResponse(NOT_FOUND, HTTP_TYPE, response,GET);
+		createResponse(NOT_FOUND, TEXT_HTML_TYPE, response,GET);
 		return;
 	}
 	if (file.bad())
 	{
-		createResponse(SERVER_ERROR, HTTP_TYPE, response,GET);
+		createResponse(SERVER_ERROR, TEXT_HTML_TYPE, response,GET);
 		return;
 	}
 	file.seekg(0, file.end);
@@ -67,7 +67,7 @@ void GET_HEAD_request(string& path, char** response, int method,string& acceptLa
 	}
 	else
 	{
-		createResponse("200 OK", "text/html", response, HEAD);
+		createResponse("200 OK", "text/html", response, HEAD,file_size);
 	}
 	file.close();
 }
@@ -107,7 +107,7 @@ void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader
 }
 bool findAvailableLang(string& language, string& acceptLangugeHeader)
 {
-
+	bool found = true;
 	if (acceptLangugeHeader.empty())
 	{
 		language = "en";
@@ -125,7 +125,12 @@ bool findAvailableLang(string& language, string& acceptLangugeHeader)
 	{
 		language = "fr";  // Then prefer French if present
 	}
-	return language.empty(); // If no language was found, return false
+	else // If none of the above languages are present, return false
+	{
+		found = false;
+	}
+	return found;
+	
 }
 
 bool isLanguageAccepted(const std::string& header, const std::string& lang) {
@@ -146,12 +151,12 @@ void POST_request(string& body, char** response) {
 	else {
 		status = GOOD;
 	}
-	createResponse(status, HTTP_TYPE, response,POST,body.size(),body);
+	createResponse(status, TEXT_HTML_TYPE, response,POST,body.size(),body);
 }
 
 void PUT_request(string& path,string& body, char** response) {
 	string status = putRequestFileManager(path, body);
-	createResponse(status, HTTP_TYPE, response, POST, body.size(), body);
+	createResponse(status, TEXT_HTML_TYPE, response, POST, body.size(), body);
 }
 
 //need to understand if the file name is only in the path or if it can be in the body of put request or both
@@ -197,17 +202,19 @@ void DELETE_request(string& path, char** response)
 	getFilePath(path);
 	if (remove(path.c_str()) == 0) 
 	{
-		createResponse(GOOD, HTTP_TYPE, response, DELETE_);
+		createResponse(GOOD, TEXT_HTML_TYPE, response, DELETE_);
 	}
 	else 
 	{
-		createResponse(NOT_FOUND, HTTP_TYPE, response, DELETE_);
+		createResponse(NOT_FOUND, TEXT_HTML_TYPE, response, DELETE_);
 	}
 }
 void getFilePath(string& path) 
 {
 	size_t index = path.find("C:\\temp");
-	if (index == string::npos) {
-		path = full_path + path;
+	// if the C:temp is not in the path we add it
+	if (index == string::npos) 
+	{
+		path = full_path + "/" + path;
 	}
 }

@@ -102,9 +102,9 @@ void main()
 		cin >> option;
 
 		if (option == 1)
-			strcpy(sendBuff, "GET /index.html?lang=en HTTP/1.1\r\nHost: example.com\r\nAccept-Language: en, he, fr\r\n\r\n");
+			strcpy(sendBuff, "GET /index.html HTTP/1.1\r\nHost: example.com\r\nAccept-Language: ff\r\n\r\n");
 		else if (option == 2)
-			strcpy(sendBuff, "HEAD index.html?lang=qq HTTP/1.1\r\nHost: example.com\r\nAccept-Language: en, he, fr\r\n\r\n");
+			strcpy(sendBuff, "HEAD index.html HTTP/1.1\r\nHost: example.com\r\nAccept-Language: en, he, fr\r\n\r\n");
 		else if (option == 3)
 			strcpy(sendBuff, "POST /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 4)
@@ -112,9 +112,9 @@ void main()
 		else if (option == 5)
 			strcpy(sendBuff, "DELETE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 6)
-			strcpy(sendBuff, "TRACE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "TRACE /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\n\r\n");
 		else if (option == 7)
-			strcpy(sendBuff, "OPTIONS /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
+			strcpy(sendBuff, "OPTIONS /helloWorld.txt HTTP/1.1\r\nHost: example.com\r\n\r\n");
 		else if (option == 8) 
 		{
 			// Closing connections and Winsock.
@@ -141,7 +141,7 @@ void main()
 			WSACleanup();
 			return;
 		}
-		cout << "Time Client: Sent: " << bytesSent << "/" << strlen(sendBuff) << " bytes of \"" << sendBuff << "\" message.\n";
+		cout << "Time Client: Sent: " << bytesSent << "/" << strlen(sendBuff) << " bytes of \"" << endl << sendBuff << endl;
 
 		// Gets the server's answer for options 1 and 2.
 		if (option != 8)
