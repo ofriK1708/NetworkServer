@@ -32,6 +32,7 @@ struct SocketState
 	int method;	// Sending sub-type
 	massage_headers headers;
 	char * buffer;
+	time_t time_of_last_byte;
 
 	//int len;
 }typedef SocketState;
@@ -44,6 +45,7 @@ constexpr int RECEIVE = 2;
 constexpr int IDLE = 3;
 constexpr int SEND = 4;
 constexpr int BUFFER_SIZE = 1024;
+constexpr int TIME_OUT = 120;
 
 bool addSocket(SocketState sockets[], int& socketsCount, SOCKET id, int what);
 void removeSocket(SocketState sockets[],int& socketsCount,int index);
@@ -53,6 +55,7 @@ void sendMessage(SocketState sockets[],int index);
 void parseHttpMessage(const string& message, massage_headers& headers);
 void handleReq(massage_headers& headers, char** response);
 void clearAndFreeHeadersAndResponse(SocketState& socket);
+void serverTimeoutClock(SocketState* sockets, int& socketsCount);
 
 
 void main()
@@ -138,6 +141,8 @@ void main()
 			WSACleanup();
 			return;
 		}
+
+		serverTimeoutClock(sockets, socketsCount);
 
 		for (int i = 0; i < MAX_SOCKETS && nfd > 0; i++)
 		{
@@ -268,6 +273,7 @@ void receiveMessage(SocketState sockets[],int& socketsCount,int index)
 		cout << "Web Server: Recieved: " << logicalLength << " bytes of \""<< endl << sockets[index].buffer;
 		parseHttpMessage(sockets[index].buffer, sockets[index].headers);
 		sockets[index].send = SEND;
+		sockets[index].time_of_last_byte = time(nullptr);;
 }
 
 void parseHttpMessage(const string& message, massage_headers& headers) 
@@ -400,4 +406,27 @@ void clearAndFreeHeadersAndResponse(SocketState& socket)
 	free(socket.buffer);
 	socket.buffer = nullptr;
 	socket.send = IDLE;
+}
+
+void serverTimeoutClock(SocketState* sockets, int& socketsCount)
+{
+	clock_t cur_time = time(nullptr);
+
+	for (int i = 1; i < MAX_SOCKETS; i++)
+	{
+		if (sockets[i].time_of_last_byte > 0)
+		{
+			time_t time_of_last_sec = sockets[i].time_of_last_byte;
+
+			if ((cur_time - time_of_last_sec) > TIME_OUT)
+			{
+				printf("Socket %d Closed\n", sockets[i].id);
+				closesocket(sockets[i].id);
+				// Reset the socket data
+				sockets[i].time_of_last_byte = 0;
+				removeSocket(sockets, socketsCount, i);
+				sockets[i].id = 0;
+			}
+		}
+	}
 }
