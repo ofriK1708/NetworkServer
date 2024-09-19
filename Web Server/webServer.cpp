@@ -21,6 +21,7 @@ struct massage_headers
 	string host;
 	string accept_languages;
 	string content_len;
+	string contentLang;
 	string body;
 }typedef massage_headers;
 
@@ -309,6 +310,10 @@ void parseHttpMessage(const string& message, massage_headers& headers)
 			{
 				headers.accept_languages = line.substr(strlen("Accept-Language: "));   
 			}
+			else if (headers.contentLang.empty() && line.find("Content-Language:") != std::string::npos)
+			{
+				headers.contentLang = line.substr(strlen("Content-Language: "), 2);
+			}
 			else if (headers.content_len.empty() && line.find("Content-Length:") != std::string::npos) 
 			{
 				headers.content_len = line.substr(strlen("Content-Length: "));
@@ -368,7 +373,7 @@ void handleReq(massage_headers& headers,char** response)
 	}
 	else if (headers.method == "PUT")
 	{
-		PUT_request(headers.path, headers.body, response);
+		PUT_request(headers.path, headers.body, response, headers.contentLang);
 	}
 	else if (headers.method == "DELETE")
 	{

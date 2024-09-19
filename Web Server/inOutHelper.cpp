@@ -40,7 +40,7 @@ void GET_HEAD_request(string& path, char** response, int method,string& acceptLa
 	getFilePath(path);
 	if(!checkLangQuery(path, acceptLangugeHeader))
 	{
-		createResponse("406 Not Acceptable", "text/html", response, GET);
+		createResponse(NOT_ACCEPTABLE, TEXT_HTML_TYPE, response, GET);
 		return;
 	}
 	std::ifstream file(path,std::ios::in);
@@ -63,11 +63,11 @@ void GET_HEAD_request(string& path, char** response, int method,string& acceptLa
 		string body;
 		body.resize(file_size);
 		file.read(&body[0], file_size);
-		createResponse("200 OK", "text/html", response, GET, file_size, body);
+		createResponse(GOOD, TEXT_HTML_TYPE, response, GET, file_size, body);
 	}
 	else
 	{
-		createResponse("200 OK", "text/html", response, HEAD,file_size);
+		createResponse(GOOD, TEXT_HTML_TYPE, response, HEAD,file_size);
 	}
 	file.close();
 }
@@ -82,7 +82,10 @@ bool checkLangQuery(string& path,string& acceptLangugeHeader)
 	{
 		language = path.substr(i + 6); // 6 is the length of the query string "lang="
 		path = path.substr(0, i);
-		foundAvailableLang = isLanguageAccepted(acceptLangugeHeader, language);
+		if (language == HEBREW || language == ENGLISH || language == FRENCH)
+			foundAvailableLang = true;
+		else
+			foundAvailableLang = false;
 	}
 	else // we check if the accept-language header is present or find the first available language and return false there isnt one 
 	{
@@ -90,11 +93,11 @@ bool checkLangQuery(string& path,string& acceptLangugeHeader)
 	}
 	if (foundAvailableLang)
 	{
-		parseHeaderPath(path, language, acceptLangugeHeader);
+		parseHeaderPath(path, language);
 	}
 	return foundAvailableLang;
 }
-void parseHeaderPath(string& path, string& language, string& acceptLangugeHeader)
+void parseHeaderPath(string& path, string& language)
 {
 	for (int i = 0; i < path.size(); i++)
 	{
@@ -110,20 +113,20 @@ bool findAvailableLang(string& language, string& acceptLangugeHeader)
 	bool found = true;
 	if (acceptLangugeHeader.empty())
 	{
-		language = "en";
+		language = ENGLISH;
 		return true;
 	}
-	if (isLanguageAccepted(acceptLangugeHeader, "en")) 
+	if (isLanguageAccepted(acceptLangugeHeader, ENGLISH))
 	{
-		language = "en"; // Prefer English if present
+		language = ENGLISH; // Prefer English if present
 	}
-	else if (isLanguageAccepted(acceptLangugeHeader, "he"))
+	else if (isLanguageAccepted(acceptLangugeHeader, HEBREW))
 	{
-		language = "he";  // Then prefer Hebrew if present
+		language = HEBREW;  // Then prefer Hebrew if present
 	}
-	else if (isLanguageAccepted(acceptLangugeHeader, "fr")) 
+	else if (isLanguageAccepted(acceptLangugeHeader, FRENCH)) 
 	{
-		language = "fr";  // Then prefer French if present
+		language = FRENCH;  // Then prefer French if present
 	}
 	else // If none of the above languages are present, return false
 	{
@@ -154,16 +157,22 @@ void POST_request(string& body, char** response) {
 	createResponse(status, TEXT_HTML_TYPE, response,POST,body.size(),body);
 }
 
-void PUT_request(string& path,string& body, char** response) {
-	string status = putRequestFileManager(path, body);
-	createResponse(status, TEXT_HTML_TYPE, response, POST, body.size(), body);
+void PUT_request(string& path,string& body, char** response, string& contentLang) {
+	string status = putRequestFileManager(path, body, contentLang);
+	if(status == NOT_ACCEPTABLE || status == SERVER_ERROR)
+		createResponse(status, TEXT_HTML_TYPE, response, PUT);
+	else
+		createResponse(status, TEXT_HTML_TYPE, response, PUT, body.size(), body);
 }
 
 //need to understand if the file name is only in the path or if it can be in the body of put request or both
 //WE CAN DECIDE THAT FILE NAME WILL BE SENT ONLY IN THE PATH HEADER
 //if file is already existed need to change last-modified header, need to think if we ahould create another response func
-string putRequestFileManager(string& path, string& body) {
+string putRequestFileManager(string& path, string& body, string& contentLang) {
 	getFilePath(path);
+	if (contentLang.empty())
+		return NOT_ACCEPTABLE;
+	parseHeaderPath(path, contentLang);
 	std::ifstream file(path);
 
 	// file does not exist
@@ -200,6 +209,7 @@ string putRequestFileManager(string& path, string& body) {
 void DELETE_request(string& path, char** response) 
 {
 	getFilePath(path);
+	
 	if (remove(path.c_str()) == 0) 
 	{
 		createResponse(GOOD, TEXT_HTML_TYPE, response, DELETE_);
