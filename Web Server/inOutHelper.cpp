@@ -209,7 +209,6 @@ string putRequestFileManager(string& path, string& body, string& contentLang) {
 void DELETE_request(string& path, char** response) 
 {
 	getFilePath(path);
-	
 	if (remove(path.c_str()) == 0) 
 	{
 		createResponse(GOOD, TEXT_HTML_TYPE, response, DELETE_);

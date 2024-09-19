@@ -108,7 +108,7 @@ void main()
 		else if (option == 3)
 			strcpy(sendBuff, "POST helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 4)
-			strcpy(sendBuff, "PUT helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text\r\nContent-Language: en\r\nContent-Length: 6\r\n\r\nHAPOEL");
+			strcpy(sendBuff, "PUT helloWorld.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text\r\nContent-Language: en\r\nContent-Length: 11\r\n\r\nHello World\r\n");
 		else if (option == 5)
 			strcpy(sendBuff, "DELETE helloWorld.en.txt HTTP/1.1\r\nHost: example.com\r\nContent-Type: text / plain\r\nContent-Length: 17\r\n\r\nhello world!!!!!!!");
 		else if (option == 6)
